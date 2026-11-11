@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SCH 룸메이팅 - 순천향대 익명 룸메이트 찾기</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 🗺️ 카카오맵 API -->
+  <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7be1ecf1bfd59a5417d3b86494937ffa&autoload=false"></script>
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-800">
+  <!-- 상단 헤더 -->
+  <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold flex items-center gap-2">🏫 순천향대 익명 룸메이팅</h1>
+      <div id="auth-buttons" class="flex items-center gap-2">
+        <button onclick="openAuthModal('login')" class="bg-blue-500 hover:bg-blue-700 px-3 py-1.5 rounded-md font-medium text-sm transition">로그인</button>
+        <button onclick="openAuthModal('signup')" class="bg-white text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md font-bold text-sm transition">회원가입</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto p-4">
+    <!-- 🗺️ 카카오맵 지도 표시 영역 -->
+    <section class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-sm font-semibold text-gray-500">🗺️ 기숙사 위치 지도 (마커 클릭 시 기숙사 선택)</h2>
+        <span class="text-xs text-blue-600 font-medium">마커를 누르면 해당 기숙사 글만 필터링됩니다</span>
+      </div>
+      <div id="map" class="w-full h-64 md:h-80 rounded-lg border border-gray-200"></div>
+      <p id="map-error" class="hidden mt-2 text-sm text-red-600" role="alert"></p>
+    </section>
+
+    <!-- 기숙사 선택 필터 탭 -->
+    <section class="mb-6">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-sm font-semibold text-gray-500">기숙사 선택</h2>
+        <button onclick="toggleForm()" class="bg-blue-600 text-white px-3 py-1.5 rounded-md font-bold text-sm hover:bg-blue-700 transition">
+          + 조건 글쓰기
+        </button>
+      </div>
+      <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" id="dorm-tabs">
+        <button onclick="selectDorm('전체')" class="dorm-btn px-4 py-2 rounded-full border bg-blue-600 text-white text-sm font-medium whitespace-nowrap">전체</button>
+        <button onclick="selectDorm('학성사1')" class="dorm-btn px-4 py-2 rounded-full border bg-white text-gray-700 text-sm font-medium whitespace-nowrap hover:bg-gray-100">학성사1</button>
+        <button onclick="selectDorm('학성사2')" class="dorm-btn px-4 py-2 rounded-full border bg-white text-gray-700 text-sm font-medium whitespace-nowrap hover:bg-gray-100">학성사2</button>
+        <button onclick="selectDorm('학성사3')" class="dorm-btn px-4 py-2 rounded-full border bg-white text-gray-700 text-sm font-medium whitespace-nowrap hover:bg-gray-100">학성사3</button>
+        <button onclick="selectDorm('향설생활관 1관')" class="dorm-btn px-4 py-2 rounded-full border bg-white text-gray-700 text-sm font-medium whitespace-nowrap hover:bg-gray-100">향설생활관 1관</button>
+        <button onclick="selectDorm('향설생활관 2관')" class="dorm-btn px-4 py-2 rounded-full border bg-white text-gray-700 text-sm font-medium whitespace-nowrap hover:bg-gray-100">향설생활관 2관</button>
+        <button onclick="selectDorm('향설생활관 3관')" class="dorm-btn px-4 py-2 rounded-full border bg-white text-gray-700 text-sm font-medium whitespace-nowrap hover:bg-gray-100">향설생활관 3관</button>
+      </div>
+    </section>
+
+    <!-- 구인글 작성 폼 -->
+    <section id="post-form" class="hidden bg-white p-6 rounded-xl shadow-lg mb-6 border border-gray-200">
+      <h2 class="text-lg font-bold mb-4 text-gray-900 border-b pb-2">룸메이트 구인글 작성</h2>
+      <form id="roommate-form" onsubmit="submitPost(event)" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">거주 기숙사 *</label>
+            <select id="form-dormitory" required class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="">기숙사를 선택하세요</option>
+              <option value="학성사1">학성사1</option>
+              <option value="학성사2">학성사2</option>
+              <option value="학성사3">학성사3</option>
+              <option value="향설생활관 1관">향설생활관 1관</option>
+              <option value="향설생활관 2관">향설생활관 2관</option>
+              <option value="향설생활관 3관">향설생활관 3관</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">흡연 여부</label>
+              <select id="is_smoker" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="false">비흡연</option>
+                <option value="true">흡연</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">희망 침대 위치</label>
+              <select id="bed" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="up">상층 (2층)</option>
+                <option value="down">하층 (1층)</option>
+                <option value="any">무관</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">😴 코골이</label>
+            <select id="snoring" class="w-full border rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="false">없음</option>
+              <option value="true">있음</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">😬 이갈이</label>
+            <select id="teeth_grinding" class="w-full border rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="false">없음</option>
+              <option value="true">있음</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">🗣️ 잠꼬대</label>
+            <select id="sleep_talking" class="w-full border rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="false">없음</option>
+              <option value="true">있음</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-xl bg-gray-50">
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">🌙 취침 시간</label>
+            <div class="flex items-center gap-1 bg-white p-2 rounded-xl border shadow-inner justify-center">
+              <select id="sleep_ampm" class="p-2 border-r bg-transparent font-medium text-gray-700 outline-none">
+                <option value="오후">오후</option>
+                <option value="오전">오전</option>
+              </select>
+              <select id="sleep_hour" class="p-2 bg-transparent font-bold text-lg text-gray-800 outline-none">
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="01">01</option>
+                <option value="02">02</option>
+                <option value="03">03</option>
+                <option value="04">04</option>
+                <option value="05">05</option>
+                <option value="06">06</option>
+                <option value="07">07</option>
+                <option value="08">08</option>
+                <option value="09">09</option>
+                <option value="10">10</option>
+              </select>
+              <span class="font-bold">:</span>
+              <select id="sleep_minute" class="p-2 bg-transparent text-gray-600 outline-none">
+                <option value="00">00</option>
+                <option value="05">05</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="25">25</option>
+                <option value="30">30</option>
+                <option value="35">35</option>
+                <option value="40">40</option>
+                <option value="45">45</option>
+                <option value="50">50</option>
+                <option value="55">55</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">☀️ 기상 시간</label>
+            <div class="flex items-center gap-1 bg-white p-2 rounded-xl border shadow-inner justify-center">
+              <select id="wake_ampm" class="p-2 border-r bg-transparent font-medium text-gray-700 outline-none">
+                <option value="오전">오전</option>
+                <option value="오후">오후</option>
+              </select>
+              <select id="wake_hour" class="p-2 bg-transparent font-bold text-lg text-gray-800 outline-none">
+                <option value="08">08</option>
+                <option value="06">06</option>
+                <option value="07">07</option>
+                <option value="09">09</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="01">01</option>
+                <option value="02">02</option>
+                <option value="03">03</option>
+                <option value="04">04</option>
+                <option value="05">05</option>
+              </select>
+              <span class="font-bold">:</span>
+              <select id="wake_minute" class="p-2 bg-transparent text-gray-600 outline-none">
+                <option value="00">00</option>
+                <option value="05">05</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="25">25</option>
+                <option value="30">30</option>
+                <option value="35">35</option>
+                <option value="40">40</option>
+                <option value="45">45</option>
+                <option value="50">50</option>
+                <option value="55">55</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="border p-4 rounded-lg bg-gray-50 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-medium text-gray-700">⚠️ 벌점 내역</label>
+            <select id="has_penalty" onchange="togglePenaltyInput()" class="border rounded-lg p-1.5 text-sm bg-white outline-none">
+              <option value="false">벌점 없음 (0점)</option>
+              <option value="true">벌점 있음 / 기록 작성</option>
+            </select>
+          </div>
+          <div id="penalty-details-container" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">벌점 내역 및 사유 작성 *</label>
+            <input type="text" id="penalty_details" placeholder="예: 점호 미참석 1점, 실내 취식 2점 (총 3점)" class="w-full border rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">추가 희망 사항</label>
+          <textarea id="description" rows="3" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="원하는 룸메이트 성향, 소음 민감도, 청소 주기, 기타 희망사항을 자유롭게 작성하세요."></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="toggleForm()" class="px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-600 font-medium">취소</button>
+          <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm">등록하기</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 게시글 목록 영역 -->
+    <section>
+      <div class="flex justify-between items-center mb-4">
+        <h2 id="current-dorm-title" class="text-lg font-bold text-gray-800">전체 게시글</h2>
+      </div>
+      <div id="posts-container" class="grid gap-4 md:grid-cols-2"></div>
+    </section>
+  </main>
+
+  <!-- 로그인 / 회원가입 모달 -->
+  <div id="auth-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
+      <h3 id="modal-title" class="text-xl font-bold text-gray-900 mb-4">로그인</h3>
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">아이디 *</label>
+          <input type="text" id="auth-username" required class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none" placeholder="아이디 입력">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">비밀번호 *</label>
+          <input type="password" id="auth-password" required class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none" placeholder="비밀번호 입력">
+        </div>
+
+        <div id="signup-extra-fields" class="hidden space-y-3 pt-2 border-t border-gray-100">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">이름 (1대1 채팅 시 상대방에게만 공개) *</label>
+            <input type="text" id="auth-realname" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none" placeholder="예: 홍길동">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">익명 닉네임 (구인글 게시용) *</label>
+            <input type="text" id="auth-nickname" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none" placeholder="예: 향설2관새내기">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">나이 *</label>
+              <input type="number" id="auth-age" min="18" max="40" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none" placeholder="예: 20">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">성별 *</label>
+              <select id="auth-gender" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none">
+                <option value="male">남성</option>
+                <option value="female">여성</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition mt-4">로그인</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 💬 채팅 목록 모달 -->
+  <div id="chat-list-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative max-h-[80vh] flex flex-col">
+      <button onclick="closeChatListModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
+      <h3 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2 flex items-center gap-2">💬 내 채팅 대화함</h3>
+      
+      <div id="chat-rooms-container" class="flex-1 overflow-y-auto space-y-2 py-2">
+        <!-- 대화방 목록 동적 생성 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 1대1 채팅 사전 안내 동의 모달 -->
+  <div id="chat-notice-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center relative space-y-4">
+      <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl">
+        📢
+      </div>
+      <h3 class="text-lg font-bold text-gray-900">1:1 채팅 입장 안내</h3>
+      
+      <div class="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-lg text-sm text-left font-medium space-y-1">
+        <p class="font-bold text-amber-900 text-center border-b border-amber-200 pb-1 mb-1">
+          채팅 시작 시, 상대방에게 프로필이 공개됩니다.
+        </p>
+        <p class="text-xs text-amber-800">
+          • 회원가입 시 작성한 본인의 실명, 나이, 성별 프로필이 대화 상대방에게 상호 공개됩니다.
+        </p>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeChatNoticeModal()" class="w-1/2 border py-2.5 rounded-lg font-medium text-gray-600 hover:bg-gray-50 text-sm">취소</button>
+        <button onclick="confirmChatNotice()" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-bold text-sm shadow-sm transition">확인했습니다</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1:1 채팅방 연동 모달 -->
+  <div id="chat-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative space-y-4">
+      <button onclick="closeChatModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
+      
+      <div class="border-b pb-3">
+        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">💬 1:1 매칭 채팅방</h3>
+        <p class="text-xs text-blue-600 mt-1">상대방과의 실시간 대화 및 프로필 공유 공간입니다.</p>
+      </div>
+
+      <div id="target-user-profile" class="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-2">
+        <h4 class="text-xs font-bold text-blue-800 uppercase tracking-wider">매칭 상대 프로필 정보</h4>
+        <div class="grid grid-cols-2 gap-2 text-sm text-gray-700">
+          <div>실명: <b id="chat-target-name" class="text-gray-900">-</b></div>
+          <div>게시 닉네임: <b id="chat-target-nickname" class="text-gray-900">-</b></div>
+          <div>나이: <b id="chat-target-age" class="text-gray-900">-</b></div>
+          <div>성별: <b id="chat-target-gender" class="text-gray-900">-</b></div>
+        </div>
+      </div>
+
+      <div id="chat-messages-container" class="h-64 border rounded-lg p-3 bg-gray-50 overflow-y-auto space-y-2 text-sm">
+        <div class="bg-white p-2 rounded-lg border shadow-xs text-xs text-gray-500 text-center">
+          1대1 매칭 대화방이 연결되었습니다.
+        </div>
+      </div>
+
+      <form onsubmit="sendMessage(event)" class="flex gap-2">
+        <input type="text" id="chat-input" placeholder="메시지를 입력하세요..." required class="flex-1 border rounded-lg p-2.5 outline-none text-sm focus:ring-2 focus:ring-blue-500">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition">전송</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://opdodufamsaqtvnbjekr.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wZG9kdWZhbXNhcXR2bmJqZWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0MzY2NjIsImV4cCI6MjEwOTAxMjY2Mn0.FF5Dthys5_Sj6ufoKuvlyQaPkKcs9kN2FhNJsR60TOg';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentSelectedDorm = '전체';
+    let authMode = 'login';
+    let currentUser = null;
+    let selectedTargetUser = null;
+    let chatInterval = null;
+    let notificationInterval = null;
+
+    // 🗺️ 순천향대학교 기숙사 6개동 실측 정밀 좌표 (보내주신 스크린샷 6장 100% 매칭 완료!)
+    const DORM_LOCATIONS = {
+      '학성사1': { lat: 36.77235500117056, lng: 126.93347060841786 },      // 학성사 1관 정중앙
+      '학성사2': { lat: 36.7721028073959, lng: 126.93368364796498 },      // 학성사 2관
+      '학성사3': { lat: 36.771436239396074, lng: 126.93414906529779 },      // 학성사 3관
+      '향설생활관 1관': { lat: 36.76856511661604, lng: 126.93225301469215 }, // 우편취급국 건물 위치
+      '향설생활관 2관': { lat: 36.76807928680716, lng: 126.93362550992036 }, // 향설생활관 2관 건물
+      '향설생활관 3관': { lat: 36.76801676978963, lng: 126.93463921309909 }  // GS25 및 향설 3관 건물
+    };
+
+    let map = null;
+    let activeInfoWindow = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      checkLoginStatus();
+      fetchPosts();
+      initMap(); // 카카오맵 초기화
+    });
+
+    // 🗺️ 카카오맵 지도 생성 및 기숙사 마커 등록 함수
+    function initMap() {
+      const mapError = document.getElementById('map-error');
+
+      if (!window.kakao || !window.kakao.maps || typeof window.kakao.maps.load !== 'function') {
+        if (mapError) {
+          mapError.textContent = '카카오 지도를 불러오지 못했습니다. 카카오 개발자 콘솔에서 JavaScript 키와 현재 접속 주소를 확인해 주세요.';
+          mapError.classList.remove('hidden');
+        }
+        console.error('Kakao Maps SDK is unavailable. Check the JavaScript key and registered web domain.');
+        return;
+      }
+
+      kakao.maps.load(function() {
+        const mapContainer = document.getElementById('map');
+        const mapOptions = {
+          center: new kakao.maps.LatLng(36.7698, 126.9338), // 순천향대학교 기숙사 단지 전체를 한눈에 보는 중심 좌표
+          level: 4 // 카카오맵 확대 레벨
+        };
+
+        map = new kakao.maps.Map(mapContainer, mapOptions);
+        // 각 기숙사 마커 생성 및 클릭 이벤트 등록
+        Object.keys(DORM_LOCATIONS).forEach(dormName => {
+          const loc = DORM_LOCATIONS[dormName];
+          const markerPosition = new kakao.maps.LatLng(loc.lat, loc.lng);
+
+          const marker = new kakao.maps.Marker({
+            position: markerPosition,
+            map: map
+          });
+
+          const infoWindow = new kakao.maps.InfoWindow({
+            content: `<div style="padding:6px 10px;font-size:12px;font-weight:bold;color:#1e40af;white-space:nowrap;">🏫 ${dormName}</div>`
+          });
+
+          // 카카오맵 마커 클릭 이벤트
+          kakao.maps.event.addListener(marker, 'click', function() {
+            if (activeInfoWindow) {
+              activeInfoWindow.close();
+            }
+            infoWindow.open(map, marker);
+            activeInfoWindow = infoWindow;
+
+            // 지도 이동 및 기숙사 필터 선택 실행
+            map.panTo(markerPosition);
+            selectDorm(dormName);
+
+            // 구인글 작성 폼의 기숙사 선택값 자동 변경
+            const formDormSelect = document.getElementById('form-dormitory');
+            if (formDormSelect) {
+              formDormSelect.value = dormName;
+            }
+          });
+        });
+      });
+    }
+
+    function checkLoginStatus() {
+      const savedUser = localStorage.getItem('sch_roommate_user');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        renderAuthButtons();
+        startNotificationCheck();
+      }
+    }
+
+    function renderAuthButtons() {
+      const container = document.getElementById('auth-buttons');
+      if (currentUser) {
+        container.innerHTML = `
+          <button onclick="openChatListModal()" class="relative bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded-md text-sm font-semibold flex items-center gap-1.5 transition">
+            💬 채팅 목록
+            <span id="unread-badge" class="hidden absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-blue-600 animate-pulse">0</span>
+          </button>
+          <span class="text-sm font-semibold bg-blue-800 px-3 py-1.5 rounded-md">👤 ${escapeHtml(currentUser.nickname || currentUser.username)}님</span>
+          <button onclick="logout()" class="bg-blue-500 hover:bg-blue-700 px-3 py-1.5 rounded-md font-medium text-sm transition">로그아웃</button>
+        `;
+      } else {
+        container.innerHTML = `
+          <button onclick="openAuthModal('login')" class="bg-blue-500 hover:bg-blue-700 px-3 py-1.5 rounded-md font-medium text-sm transition">로그인</button>
+          <button onclick="openAuthModal('signup')" class="bg-white text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md font-bold text-sm transition">회원가입</button>
+        `;
+      }
+    }
+
+    // 🔔 미확인 메시지 실시간 감지 및 뱃지 업데이트
+    function startNotificationCheck() {
+      checkUnreadMessages();
+      if (notificationInterval) clearInterval(notificationInterval);
+      notificationInterval = setInterval(checkUnreadMessages, 3000);
+    }
+
+    async function checkUnreadMessages() {
+      if (!currentUser) return;
+
+      const { data, error } = await supabaseClient
+        .from('messages')
+        .select('id')
+        .eq('receiver_username', currentUser.username)
+        .eq('is_read', false);
+
+      const badge = document.getElementById('unread-badge');
+      if (badge && data && data.length > 0) {
+        badge.innerText = data.length > 99 ? '99+' : data.length;
+        badge.classList.remove('hidden');
+      } else if (badge) {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // 💬 채팅 목록 모달 열기 및 대화방 로딩
+    async function openChatListModal() {
+      if (!currentUser) return openAuthModal('login');
+      
+      document.getElementById('chat-list-modal').classList.remove('hidden');
+      const container = document.getElementById('chat-rooms-container');
+      container.innerHTML = `<div class="text-center py-6 text-gray-400 text-sm">대화방 목록을 불러오는 중...</div>`;
+
+      // 나와 관련된 모든 메시지 가져오기
+      const { data: messages } = await supabaseClient
+        .from('messages')
+        .select('*')
+        .or(`sender_username.eq.${currentUser.username},receiver_username.eq.${currentUser.username}`)
+        .order('created_at', { ascending: false });
+
+      if (!messages || messages.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">진행 중인 채팅방이 없습니다.</div>`;
+        return;
+      }
+
+      // 대화 상대별로 가장 최근 메시지 그룹핑
+      const roomsMap = {};
+      messages.forEach(msg => {
+        const partnerUsername = msg.sender_username === currentUser.username ? msg.receiver_username : msg.sender_username;
+        if (!roomsMap[partnerUsername]) {
+          roomsMap[partnerUsername] = {
+            partnerUsername,
+            lastMessage: msg.content,
+            lastTime: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            unreadCount: (msg.receiver_username === currentUser.username && !msg.is_read) ? 1 : 0
+          };
+        } else if (msg.receiver_username === currentUser.username && !msg.is_read) {
+          roomsMap[partnerUsername].unreadCount += 1;
+        }
+      });
+
+      // 상대방 유저 프로필 조회
+      const partnerUsernames = Object.keys(roomsMap);
+      const { data: partnerProfiles } = await supabaseClient
+        .from('users')
+        .select('*')
+        .in('username', partnerUsernames);
+
+      const profileDict = {};
+      if (partnerProfiles) {
+        partnerProfiles.forEach(p => profileDict[p.username] = p);
+      }
+
+      container.innerHTML = '';
+      Object.values(roomsMap).forEach(room => {
+        const partner = profileDict[room.partnerUsername] || { realname: '알 수 없음', nickname: room.partnerUsername, age: null, gender: null };
+        const roomDiv = document.createElement('div');
+        roomDiv.className = 'p-3 bg-gray-50 border hover:bg-blue-50/50 rounded-xl cursor-pointer flex justify-between items-center transition';
+        
+        roomDiv.onclick = () => {
+          closeChatListModal();
+          openChatModal({
+            realname: partner.realname,
+            nickname: partner.nickname,
+            age: partner.age,
+            gender: partner.gender,
+            username: room.partnerUsername
+          });
+        };
+
+        roomDiv.innerHTML = `
+          <div class="space-y-0.5">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-gray-900 text-sm">${escapeHtml(partner.nickname || partner.username)}</span>
+              <span class="text-xs text-gray-500">(${escapeHtml(partner.realname || '익명')})</span>
+            </div>
+            <p class="text-xs text-gray-600 line-clamp-1">${escapeHtml(room.lastMessage)}</p>
+          </div>
+          <div class="text-right flex flex-col items-end gap-1">
+            <span class="text-[10px] text-gray-400">${room.lastTime}</span>
+            ${room.unreadCount > 0 ? `<span class="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">${room.unreadCount}</span>` : ''}
+          </div>
+        `;
+        container.appendChild(roomDiv);
+      });
+    }
+
+    function closeChatListModal() {
+      document.getElementById('chat-list-modal').classList.add('hidden');
+    }
+
+    function openAuthModal(mode) {
+      authMode = mode;
+      document.getElementById('modal-title').innerText = mode === 'login' ? '로그인' : '회원가입 및 프로필 작성';
+      document.getElementById('auth-submit-btn').innerText = mode === 'login' ? '로그인' : '회원가입 완료';
+      
+      const extraFields = document.getElementById('signup-extra-fields');
+      if (mode === 'signup') {
+        extraFields.classList.remove('hidden');
+        document.getElementById('auth-realname').required = true;
+        document.getElementById('auth-nickname').required = true;
+        document.getElementById('auth-age').required = true;
+      } else {
+        extraFields.classList.add('hidden');
+        document.getElementById('auth-realname').required = false;
+        document.getElementById('auth-nickname').required = false;
+        document.getElementById('auth-age').required = false;
+      }
+      
+      document.getElementById('auth-modal').classList.remove('hidden');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.add('hidden');
+      document.getElementById('auth-form').reset();
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const username = document.getElementById('auth-username').value.trim();
+      const password = document.getElementById('auth-password').value.trim();
+
+      if (!username || !password) return alert('아이디와 비밀번호를 모두 입력해주세요.');
+
+      if (authMode === 'signup') {
+        const realname = document.getElementById('auth-realname').value.trim();
+        const nickname = document.getElementById('auth-nickname').value.trim();
+        const age = parseInt(document.getElementById('auth-age').value);
+        const gender = document.getElementById('auth-gender').value;
+
+        if (!realname || !nickname || !age) {
+          return alert('모든 프로필 항목을 입력해주세요.');
+        }
+
+        const { data: existing } = await supabaseClient.from('users').select('*').eq('username', username);
+        if (existing && existing.length > 0) {
+          return alert('이미 존재하는 아이디입니다.');
+        }
+
+        const { data, error } = await supabaseClient.from('users').insert([{ 
+          username, 
+          password, 
+          realname, 
+          nickname, 
+          age, 
+          gender 
+        }]).select();
+        
+        if (error) {
+          alert('회원가입 오류: ' + error.message);
+        } else {
+          alert('회원가입 및 프로필 설정이 완료되었습니다! 로그인해주세요.');
+          openAuthModal('login');
+        }
+      } else {
+        const { data, error } = await supabaseClient.from('users').select('*').eq('username', username).eq('password', password);
+        
+        if (error || !data || data.length === 0) {
+          alert('아이디 또는 비밀번호가 일치하지 않습니다.');
+        } else {
+          currentUser = data[0];
+          localStorage.setItem('sch_roommate_user', JSON.stringify(currentUser));
+          renderAuthButtons();
+          startNotificationCheck();
+          closeAuthModal();
+          alert(`${currentUser.nickname || currentUser.username}님, 환영합니다!`);
+        }
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('sch_roommate_user');
+      if (notificationInterval) clearInterval(notificationInterval);
+      currentUser = null;
+      renderAuthButtons();
+      alert('로그아웃 되었습니다.');
+    }
+
+    function toggleForm() {
+      if (!currentUser) {
+        alert('글 작성을 위해 먼저 로그인해주세요.');
+        return openAuthModal('login');
+      }
+      document.getElementById('post-form').classList.toggle('hidden');
+    }
+
+    function togglePenaltyInput() {
+      const hasPenalty = document.getElementById('has_penalty').value === 'true';
+      const container = document.getElementById('penalty-details-container');
+      if (hasPenalty) {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+        document.getElementById('penalty_details').value = '';
+      }
+    }
+
+    function selectDorm(dormName) {
+      currentSelectedDorm = dormName;
+      document.querySelectorAll('.dorm-btn').forEach(btn => {
+        btn.className = btn.innerText === dormName 
+          ? 'dorm-btn px-4 py-2 rounded-full border bg-blue-600 text-white text-sm font-medium whitespace-nowrap'
+          : 'dorm-btn px-4 py-2 rounded-full border bg-white text-gray-700 text-sm font-medium whitespace-nowrap hover:bg-gray-100';
+      });
+      document.getElementById('current-dorm-title').innerText = `${dormName} 게시글`;
+      fetchPosts();
+    }
+
+    async function fetchPosts() {
+      let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+      if (currentSelectedDorm !== '전체') {
+        query = query.eq('dormitory', currentSelectedDorm);
+      }
+
+      const { data: posts, error } = await query;
+      const container = document.getElementById('posts-container');
+      container.innerHTML = '';
+
+      if (error || !posts || posts.length === 0) {
+        container.innerHTML = `<div class="col-span-2 text-center py-12 text-gray-400 bg-white rounded-xl border">등록된 게시글이 없습니다. 첫 글을 작성해보세요!</div>`;
+        return;
+      }
+
+      posts.forEach(post => {
+        const card = document.createElement('div');
+        card.className = 'bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-3';
+        
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded font-semibold mb-1">${escapeHtml(post.dormitory)}</span>
+              <h3 class="font-bold text-gray-900">${escapeHtml(post.nickname)}</h3>
+            </div>
+            <span class="text-xs text-gray-400">${new Date(post.created_at).toLocaleDateString()}</span>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-lg text-gray-600">
+            <div>🚬 흡연: <b>${post.is_smoker ? '흡연' : '비흡연'}</b></div>
+            <div>🛌 침대: <b>${post.bed_preference === 'up' ? '상층 (2층)' : post.bed_preference === 'down' ? '하층 (1층)' : '무관'}</b></div>
+            <div>🌙 취침: <b>${escapeHtml(post.sleep_time || '미지정')}</b></div>
+            <div>☀️ 기상: <b>${escapeHtml(post.wake_time || '미지정')}</b></div>
+            <div>😴 코골이: <b>${post.snoring ? '있음' : '없음'}</b></div>
+            <div>😬 이갈이: <b>${post.teeth_grinding ? '있음' : '없음'}</b></div>
+            <div>🗣️ 잠꼬대: <b>${post.sleep_talking ? '있음' : '없음'}</b></div>
+          </div>
+
+          <div class="text-xs bg-amber-50 text-amber-800 p-2.5 rounded-lg border border-amber-200">
+            <b>⚠️ 벌점 내역:</b> ${post.penalty_details ? escapeHtml(post.penalty_details) : '없음 (0점)'}
+          </div>
+
+          <p class="text-sm text-gray-700 font-medium">📌 추가 희망 사항</p>
+          <p class="text-sm text-gray-700 bg-gray-50 p-2.5 rounded-lg">${escapeHtml(post.description)}</p>
+          
+          <button onclick="requestStartChat('${escapeHtml(post.realname)}', '${escapeHtml(post.nickname)}', '${post.age}', '${post.gender}', '${escapeHtml(post.user_id)}')"` + ` class="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 rounded-lg font-semibold text-sm transition">
+            💬 1:1 익명 채팅하기
+          </button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function submitPost(e) {
+      e.preventDefault();
+
+      if (!currentUser) {
+        alert('로그인이 필요한 기능입니다.');
+        return openAuthModal('login');
+      }
+      
+      const hasPenalty = document.getElementById('has_penalty').value === 'true';
+      const penaltyDetails = document.getElementById('penalty_details').value.trim();
+
+      if (hasPenalty && !penaltyDetails) {
+        return alert('벌점 내역 및 사유를 입력해주세요.');
+      }
+
+      const sleepTime = `${document.getElementById('sleep_ampm').value} ${document.getElementById('sleep_hour').value}:${document.getElementById('sleep_minute').value}`;
+      const wakeTime = `${document.getElementById('wake_ampm').value} ${document.getElementById('wake_hour').value}:${document.getElementById('wake_minute').value}`;
+
+      const newPost = {
+        dormitory: document.getElementById('form-dormitory').value,
+        user_id: currentUser.username,
+        nickname: currentUser.nickname,
+        realname: currentUser.realname,
+        age: currentUser.age,
+        gender: currentUser.gender,
+        is_smoker: document.getElementById('is_smoker').value === 'true',
+        snoring: document.getElementById('snoring').value === 'true',
+        teeth_grinding: document.getElementById('teeth_grinding').value === 'true',
+        sleep_talking: document.getElementById('sleep_talking').value === 'true',
+        penalty_details: hasPenalty ? penaltyDetails : null,
+        bed_preference: document.getElementById('bed').value,
+        sleep_time: sleepTime,
+        wake_time: wakeTime,
+        description: document.getElementById('description').value
+      };
+
+      const { error } = await supabaseClient.from('posts').insert([newPost]);
+      if (error) {
+        alert('글 등록 실패: ' + error.message);
+      } else {
+        document.getElementById('roommate-form').reset();
+        document.getElementById('penalty-details-container').classList.add('hidden');
+        toggleForm();
+        fetchPosts();
+      }
+    }
+
+    function requestStartChat(realname, nickname, age, gender, username) {
+      if (!currentUser) {
+        alert('1:1 채팅에 참여하려면 먼저 로그인해주세요.');
+        return openAuthModal('login');
+      }
+
+      selectedTargetUser = { realname, nickname, age, gender, username };
+      document.getElementById('chat-notice-modal').classList.remove('hidden');
+    }
+
+    function closeChatNoticeModal() {
+      document.getElementById('chat-notice-modal').classList.add('hidden');
+    }
+
+    function confirmChatNotice() {
+      document.getElementById('chat-notice-modal').classList.add('hidden');
+      if (selectedTargetUser) {
+        openChatModal(selectedTargetUser);
+      }
+    }
+
+    function openChatModal(target) {
+      selectedTargetUser = target;
+      document.getElementById('chat-target-name').innerText = target.realname || '미공개';
+      document.getElementById('chat-target-nickname').innerText = target.nickname || '익명';
+      document.getElementById('chat-target-age').innerText = target.age ? `${target.age}세` : '미공개';
+      document.getElementById('chat-target-gender').innerText = target.gender === 'male' ? '남성' : target.gender === 'female' ? '여성' : '미공개';
+
+      document.getElementById('chat-modal').classList.remove('hidden');
+
+      fetchMessages();
+      if (chatInterval) clearInterval(chatInterval);
+      chatInterval = setInterval(fetchMessages, 2000);
+    }
+
+    function closeChatModal() {
+      document.getElementById('chat-modal').classList.add('hidden');
+      if (chatInterval) clearInterval(chatInterval);
+      selectedTargetUser = null;
+      checkUnreadMessages();
+    }
+
+    async function sendMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-input');
+      const content = input.value.trim();
+
+      if (!content || !selectedTargetUser || !currentUser) return;
+
+      const { error } = await supabaseClient.from('messages').insert([{
+        sender_username: currentUser.username,
+        receiver_username: selectedTargetUser.username,
+        content: content,
+        is_read: false
+      }]);
+
+      if (error) {
+        alert('메시지 전송 실패: ' + error.message);
+      } else {
+        input.value = '';
+        fetchMessages();
+      }
+    }
+
+    async function fetchMessages() {
+      if (!currentUser || !selectedTargetUser) return;
+
+      // 상대방이 나에게 보낸 메시지 '읽음(is_read: true)'으로 업데이트
+      await supabaseClient
+        .from('messages')
+        .update({ is_read: true })
+        .eq('sender_username', selectedTargetUser.username)
+        .eq('receiver_username', currentUser.username)
+        .eq('is_read', false);
+
+      const { data: messages, error } = await supabaseClient.from('messages')
+        .select('*')
+        .or(`and(sender_username.eq.${currentUser.username},receiver_username.eq.${selectedTargetUser.username}),and(sender_username.eq.${selectedTargetUser.username},receiver_username.eq.${currentUser.username})`)
+        .order('created_at', { ascending: true });
+
+      const container = document.getElementById('chat-messages-container');
+      container.innerHTML = '';
+
+      if (error || !messages || messages.length === 0) {
+        container.innerHTML = `<div class="text-center py-4 text-xs text-gray-400">대화 내역이 없습니다. 첫 메시지를 보내보세요!</div>`;
+        return;
+      }
+
+      messages.forEach(msg => {
+        const isMine = msg.sender_username === currentUser.username;
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `flex ${isMine ? 'justify-end' : 'justify-start'}`;
+        
+        msgDiv.innerHTML = `
+          <div class="${isMine ? 'bg-blue-600 text-white' : 'bg-white border text-gray-800'} text-sm px-3 py-2 rounded-xl max-w-[75%] shadow-xs">
+            ${escapeHtml(msg.content)}
+          </div>
+        `;
+        container.appendChild(msgDiv);
+      });
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+      return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+    }
+  </script>
+</body>
+</html>
