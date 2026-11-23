@@ -6,6 +6,6 @@
 <body>
   <h1>SOONPICK! 링크⬇️</h1>
   <br>
-  <a href="soonpick.로고.html">SOONPICK!</a>
+  [SOONPICK!](https://gen-pascal.github.io/opensw7/soonpick.로고.html)
 </body>
 </html>
