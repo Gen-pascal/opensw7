@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOONPICK! - 순천향대 익명 룸메이트 찾기</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 🗺️ 카카오맵 API -->
+  <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7be1ecf1bfd59a5417d3b86494937ffa&autoload=false"></script>
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-800">
+  <!-- 상단 헤더 -->
+  <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-20">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-extrabold tracking-wide flex items-center gap-2.5">
+        <!-- 순천향대학교 로고 (흰색 투명 PNG, base64로 파일 안에 포함) -->
+        <img src="data:image/png;base64,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" alt="순천향대학교 로고" class="h-10 w-10 object-contain shrink-0">
+        <span class="flex flex-col leading-tight">
+          <span class="text-[11px] font-medium tracking-normal text-blue-100">순천향대학교 룸메이트 찾기</span>
+          <span>SOONPICK!</span>
+        </span>
+      </h1>
+
+      <!-- 우측 햄버거 버튼 & 드롭다운 메뉴 -->
+      <div class="relative">
+        <button id="hamburger-btn" onclick="toggleHamburgerMenu()" class="p-2 rounded-lg bg-blue-500 hover:bg-blue-700 text-white transition flex items-center justify-center relative" aria-label="메뉴 열기">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <span id="hamburger-dot" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-blue-600"></span>
+        </button>
+
+        <div id="hamburger-menu" class="hidden absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50 text-gray-800">
+          <!-- JS(renderAuthButtons)에서 순서대로 렌더링 -->
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto p-4">
+    <!-- 🗺️ 카카오맵 지도 표시 영역 -->
+    <section class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+      <div class="flex justify-between items-center mb-2 gap-2">
+        <h2 class="text-base font-bold text-gray-800">📍 우리 기숙사 찾기</h2>
+        <span class="text-xs text-blue-600 font-medium text-right">기숙사를 누르면 룸메이트 글이 아래에 나와요</span>
+      </div>
+      <div id="map" class="w-full h-64 md:h-80 rounded-lg border border-gray-200"></div>
+      <p id="map-error" class="hidden mt-2 text-sm text-red-600" role="alert"></p>
+    </section>
+
+    <!-- 구인글 작성 폼 -->
+    <section id="post-form" class="hidden bg-white p-6 rounded-xl shadow-lg mb-6 border border-gray-200">
+      <h2 class="text-lg font-bold mb-4 text-gray-900 border-b pb-2">룸메이트 구인글 작성</h2>
+      <form id="roommate-form" onsubmit="submitPost(event)" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">거주 기숙사 *</label>
+            <select id="form-dormitory" required class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="">기숙사를 선택하세요</option>
+              <option value="학성사1">학성사1</option>
+              <option value="학성사2">학성사2</option>
+              <option value="학성사3">학성사3</option>
+              <option value="향설생활관 1관">향설생활관 1관</option>
+              <option value="향설생활관 2관">향설생활관 2관</option>
+              <option value="향설생활관 3관">향설생활관 3관</option>
+            </select>
+            <p id="dorm-gender-hint" class="hidden mt-1 text-xs text-blue-600"></p>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">흡연 여부</label>
+              <select id="is_smoker" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="false">비흡연</option>
+                <option value="true">흡연</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">희망 침대 위치</label>
+              <select id="bed" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="up">상층 (2층)</option>
+                <option value="down">하층 (1층)</option>
+                <option value="any">무관</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">😴 코골이</label>
+            <select id="snoring" class="w-full border rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="false">없음</option>
+              <option value="true">있음</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">😬 이갈이</label>
+            <select id="teeth_grinding" class="w-full border rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="false">없음</option>
+              <option value="true">있음</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">🗣️ 잠꼬대</label>
+            <select id="sleep_talking" class="w-full border rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="false">없음</option>
+              <option value="true">있음</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-xl bg-gray-50">
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">🌙 취침 시간</label>
+            <div class="flex items-center gap-1 bg-white p-2 rounded-xl border shadow-inner justify-center">
+              <select id="sleep_ampm" class="p-2 border-r bg-transparent font-medium text-gray-700 outline-none">
+                <option value="오후">오후</option>
+                <option value="오전">오전</option>
+              </select>
+              <select id="sleep_hour" class="p-2 bg-transparent font-bold text-lg text-gray-800 outline-none">
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="01">01</option>
+                <option value="02">02</option>
+                <option value="03">03</option>
+                <option value="04">04</option>
+                <option value="05">05</option>
+                <option value="06">06</option>
+                <option value="07">07</option>
+                <option value="08">08</option>
+                <option value="09">09</option>
+                <option value="10">10</option>
+              </select>
+              <span class="font-bold">:</span>
+              <select id="sleep_minute" class="p-2 bg-transparent text-gray-600 outline-none">
+                <option value="00">00</option>
+                <option value="05">05</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="25">25</option>
+                <option value="30">30</option>
+                <option value="35">35</option>
+                <option value="40">40</option>
+                <option value="45">45</option>
+                <option value="50">50</option>
+                <option value="55">55</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">☀️ 기상 시간</label>
+            <div class="flex items-center gap-1 bg-white p-2 rounded-xl border shadow-inner justify-center">
+              <select id="wake_ampm" class="p-2 border-r bg-transparent font-medium text-gray-700 outline-none">
+                <option value="오전">오전</option>
+                <option value="오후">오후</option>
+              </select>
+              <select id="wake_hour" class="p-2 bg-transparent font-bold text-lg text-gray-800 outline-none">
+                <option value="08">08</option>
+                <option value="06">06</option>
+                <option value="07">07</option>
+                <option value="09">09</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="01">01</option>
+                <option value="02">02</option>
+                <option value="03">03</option>
+                <option value="04">04</option>
+                <option value="05">05</option>
+              </select>
+              <span class="font-bold">:</span>
+              <select id="wake_minute" class="p-2 bg-transparent text-gray-600 outline-none">
+                <option value="00">00</option>
+                <option value="05">05</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="25">25</option>
+                <option value="30">30</option>
+                <option value="35">35</option>
+                <option value="40">40</option>
+                <option value="45">45</option>
+                <option value="50">50</option>
+                <option value="55">55</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="border p-4 rounded-lg bg-gray-50 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-medium text-gray-700">⚠️ 벌점 내역</label>
+            <select id="has_penalty" onchange="togglePenaltyInput()" class="border rounded-lg p-1.5 text-sm bg-white outline-none">
+              <option value="false">벌점 없음 (0점)</option>
+              <option value="true">벌점 있음 / 기록 작성</option>
+            </select>
+          </div>
+          <div id="penalty-details-container" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">벌점 내역 및 사유 작성 *</label>
+            <input type="text" id="penalty_details" placeholder="예: 점호 미참석 1점, 실내 취식 2점 (총 3점)" class="w-full border rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">추가 희망 사항</label>
+          <textarea id="description" rows="3" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="원하는 룸메이트 성향, 소음 민감도, 청소 주기, 기타 희망사항을 자유롭게 작성하세요."></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="toggleForm()" class="px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-600 font-medium">취소</button>
+          <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm">등록하기</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 게시글 목록 영역 -->
+    <section>
+      <div class="flex justify-between items-center mb-4 gap-2">
+        <h2 id="current-dorm-title" class="text-lg font-bold text-gray-800 scroll-mt-20">기숙사를 선택해주세요</h2>
+        <div class="flex items-center gap-2">
+          <button onclick="selectDorm('전체')" class="border bg-white text-gray-600 hover:bg-gray-100 px-3 py-1.5 rounded-md font-medium text-sm transition">전체 보기</button>
+          <button onclick="toggleForm()" class="bg-blue-600 text-white px-3 py-1.5 rounded-md font-bold text-sm hover:bg-blue-700 transition">+ 조건 글쓰기</button>
+        </div>
+      </div>
+      <div id="posts-container" class="grid gap-4 md:grid-cols-2"></div>
+    </section>
+  </main>
+
+  <!-- 로그인 / 회원가입 모달 -->
+  <div id="auth-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
+      <h3 id="modal-title" class="text-xl font-bold text-gray-900 mb-4">로그인</h3>
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">아이디 *</label>
+          <input type="text" id="auth-username" required class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none" placeholder="아이디 입력">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">비밀번호 *</label>
+          <input type="password" id="auth-password" required class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none" placeholder="비밀번호 입력">
+        </div>
+
+        <div id="signup-extra-fields" class="hidden space-y-3 pt-2 border-t border-gray-100">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">이름 (1대1 채팅 시 상대방에게만 공개) *</label>
+            <input type="text" id="auth-realname" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none" placeholder="예: 홍길동">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">익명 닉네임 (구인글 게시용) *</label>
+            <input type="text" id="auth-nickname" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none" placeholder="예: 향설2관새내기">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">나이 *</label>
+              <input type="number" id="auth-age" min="18" max="40" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none" placeholder="예: 20">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">성별 *</label>
+              <select id="auth-gender" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:bg-white outline-none">
+                <option value="male">남성</option>
+                <option value="female">여성</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition mt-4">로그인</button>
+      </form>
+
+      <!-- 로그인 창 맨 아래 회원가입 전환 링크 -->
+      <div id="login-footer-link" class="mt-4 pt-3 border-t border-gray-100 text-center text-xs text-gray-500">
+        가입한 적이 없나요?
+        <button type="button" onclick="openAuthModal('signup')" class="text-blue-600 font-bold hover:underline ml-1">회원가입</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 💬 채팅 목록 모달 -->
+  <div id="chat-list-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative max-h-[80vh] flex flex-col">
+      <button onclick="closeChatListModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
+      <h3 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2 flex items-center gap-2">💬 내 채팅 대화함</h3>
+      <div id="chat-rooms-container" class="flex-1 overflow-y-auto space-y-2 py-2"></div>
+    </div>
+  </div>
+
+  <!-- 1대1 채팅 사전 안내 동의 모달 -->
+  <div id="chat-notice-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center relative space-y-4">
+      <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl">
+        📢
+      </div>
+      <h3 class="text-lg font-bold text-gray-900">1:1 채팅 입장 안내</h3>
+      <div class="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-lg text-sm text-left font-medium space-y-1">
+        <p class="font-bold text-amber-900 text-center border-b border-amber-200 pb-1 mb-1">
+          채팅 시작 시, 상대방에게 프로필이 공개됩니다.
+        </p>
+        <p class="text-xs text-amber-800">
+          • 회원가입 시 작성한 본인의 실명, 나이, 성별 프로필이 대화 상대방에게 상호 공개됩니다.
+        </p>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeChatNoticeModal()" class="w-1/2 border py-2.5 rounded-lg font-medium text-gray-600 hover:bg-gray-50 text-sm">취소</button>
+        <button onclick="confirmChatNotice()" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-bold text-sm shadow-sm transition">확인했습니다</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1:1 채팅방 연동 모달 -->
+  <div id="chat-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative space-y-4">
+      <button onclick="closeChatModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
+      <div class="border-b pb-3">
+        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">💬 1:1 매칭 채팅방</h3>
+        <p class="text-xs text-blue-600 mt-1">상대방과의 실시간 대화 및 프로필 공유 공간입니다.</p>
+      </div>
+
+      <div id="target-user-profile" class="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-2">
+        <h4 class="text-xs font-bold text-blue-800 uppercase tracking-wider">매칭 상대 프로필 정보</h4>
+        <div class="grid grid-cols-2 gap-2 text-sm text-gray-700">
+          <div>실명: <b id="chat-target-name" class="text-gray-900">-</b></div>
+          <div>게시 닉네임: <b id="chat-target-nickname" class="text-gray-900">-</b></div>
+          <div>나이: <b id="chat-target-age" class="text-gray-900">-</b></div>
+          <div>성별: <b id="chat-target-gender" class="text-gray-900">-</b></div>
+        </div>
+      </div>
+
+      <div id="chat-messages-container" class="h-64 border rounded-lg p-3 bg-gray-50 overflow-y-auto space-y-2 text-sm">
+        <div class="bg-white p-2 rounded-lg border shadow-xs text-xs text-gray-500 text-center">
+          1대1 매칭 대화방이 연결되었습니다.
+        </div>
+      </div>
+
+      <form onsubmit="sendMessage(event)" class="flex gap-2">
+        <input type="text" id="chat-input" placeholder="메시지를 입력하세요..." required class="flex-1 border rounded-lg p-2.5 outline-none text-sm focus:ring-2 focus:ring-blue-500">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition">전송</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://opdodufamsaqtvnbjekr.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wZG9kdWZhbXNhcXR2bmJqZWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0MzY2NjIsImV4cCI6MjEwOTAxMjY2Mn0.FF5Dthys5_Sj6ufoKuvlyQaPkKcs9kN2FhNJsR60TOg';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentSelectedDorm = null;
+    let authMode = 'login';
+    let currentUser = null;
+    let selectedTargetUser = null;
+    let chatInterval = null;
+    let notificationInterval = null;
+
+    const DORM_LOCATIONS = {
+      '학성사1': { lat: 36.77235500117056, lng: 126.93347060841786 },
+      '학성사2': { lat: 36.7721028073959, lng: 126.93368364796498 },
+      '학성사3': { lat: 36.771436239396074, lng: 126.93414906529779 },
+      '향설생활관 1관': { lat: 36.76856511661604, lng: 126.93225301469215 },
+      '향설생활관 2관': { lat: 36.76807928680716, lng: 126.93362550992036 },
+      '향설생활관 3관': { lat: 36.76801676978963, lng: 126.93463921309909 }
+    };
+
+    // 🚻 기숙사별 입사 가능 성별 (female: 여자 / male: 남자 / both: 남녀 공용)
+    const DORM_GENDER = {
+      '학성사1': 'female',
+      '학성사2': 'female',
+      '학성사3': 'male',
+      '향설생활관 1관': 'female',
+      '향설생활관 2관': 'male',
+      '향설생활관 3관': 'both'
+    };
+
+    // 해당 성별의 사용자가 이 기숙사를 선택할 수 있는지 확인
+    function isDormAllowedForGender(dormName, gender) {
+      const dormGender = DORM_GENDER[dormName];
+      if (!dormGender) return false;
+      if (!gender) return true; // 성별 정보가 없는 예전 계정은 제한하지 않음
+      return dormGender === 'both' || dormGender === gender;
+    }
+
+    // 로그인한 사용자의 성별에 맞춰 '거주 기숙사' 선택지를 다시 그림
+    function updateDormOptions() {
+      const select = document.getElementById('form-dormitory');
+      const hint = document.getElementById('dorm-gender-hint');
+      if (!select) return;
+
+      const gender = currentUser ? currentUser.gender : null;
+      const prevValue = select.value;
+
+      select.innerHTML = '<option value="">기숙사를 선택하세요</option>';
+      Object.keys(DORM_GENDER).forEach(dormName => {
+        if (!isDormAllowedForGender(dormName, gender)) return;
+        const opt = document.createElement('option');
+        opt.value = dormName;
+        opt.textContent = DORM_GENDER[dormName] === 'both' ? `${dormName} (남녀 공용)` : dormName;
+        select.appendChild(opt);
+      });
+
+      // 이전에 고른 값이 여전히 허용되면 유지
+      if (prevValue && isDormAllowedForGender(prevValue, gender)) select.value = prevValue;
+
+      if (hint) {
+        if (gender === 'female' || gender === 'male') {
+          hint.textContent = gender === 'female'
+            ? '여성 회원은 여자 기숙사와 남녀 공용 기숙사만 선택할 수 있어요.'
+            : '남성 회원은 남자 기숙사와 남녀 공용 기숙사만 선택할 수 있어요.';
+          hint.classList.remove('hidden');
+        } else {
+          hint.classList.add('hidden');
+        }
+      }
+    }
+
+    let map = null;
+    const dormLabels = {};
+
+    const LABEL_DEFAULT = 'background:#ffffff;color:#1d4ed8;border:2px solid #1d4ed8;';
+    const LABEL_ACTIVE  = 'background:#f97316;color:#ffffff;border:2px solid #c2410c;';
+    const LABEL_BASE    = 'padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap;border-radius:999px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);transition:all .15s;';
+
+    function highlightDormLabel(dormName) {
+      Object.keys(dormLabels).forEach(name => {
+        dormLabels[name].style.cssText = LABEL_BASE + (name === dormName ? LABEL_ACTIVE + 'transform:scale(1.1);' : LABEL_DEFAULT);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderAuthButtons(); // 초기 햄버거 메뉴 렌더링
+      checkLoginStatus();
+      fetchPosts();
+      initMap();
+    });
+
+    function initMap() {
+      const mapError = document.getElementById('map-error');
+
+      if (!window.kakao || !window.kakao.maps || typeof window.kakao.maps.load !== 'function') {
+        if (mapError) {
+          mapError.textContent = '카카오 지도를 불러오지 못했습니다. 카카오 개발자 콘솔에서 JavaScript 키와 현재 접속 주소를 확인해 주세요.';
+          mapError.classList.remove('hidden');
+        }
+        return;
+      }
+
+      kakao.maps.load(function() {
+        const mapContainer = document.getElementById('map');
+        const mapOptions = {
+          center: new kakao.maps.LatLng(36.7698, 126.9338),
+          level: 4
+        };
+
+        map = new kakao.maps.Map(mapContainer, mapOptions);
+        Object.keys(DORM_LOCATIONS).forEach(dormName => {
+          const loc = DORM_LOCATIONS[dormName];
+          const markerPosition = new kakao.maps.LatLng(loc.lat, loc.lng);
+
+          const marker = new kakao.maps.Marker({
+            position: markerPosition,
+            map: map
+          });
+
+          const label = document.createElement('div');
+          label.textContent = dormName;
+          label.style.cssText = LABEL_BASE + LABEL_DEFAULT;
+          dormLabels[dormName] = label;
+
+          new kakao.maps.CustomOverlay({
+            position: markerPosition,
+            content: label,
+            yAnchor: 2.3,
+            clickable: true,
+            map: map
+          });
+
+          const onSelect = function() {
+            map.panTo(markerPosition);
+            selectDorm(dormName);
+          };
+
+          kakao.maps.event.addListener(marker, 'click', onSelect);
+          label.addEventListener('click', onSelect);
+        });
+
+        if (currentSelectedDorm && currentSelectedDorm !== '전체') highlightDormLabel(currentSelectedDorm);
+      });
+    }
+
+    function checkLoginStatus() {
+      const savedUser = localStorage.getItem('sch_roommate_user');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        renderAuthButtons();
+        startNotificationCheck();
+      }
+    }
+
+    // 🍔 햄버거 메뉴 렌더링 (순서: 1. 로그인/로그아웃, 2. 글쓰기)
+    function renderAuthButtons() {
+      const menu = document.getElementById('hamburger-menu');
+      if (currentUser) {
+        menu.innerHTML = `
+          <div class="px-4 py-2 text-xs font-bold text-blue-600 border-b border-gray-100">
+            👤 ${escapeHtml(currentUser.nickname || currentUser.username)}님
+          </div>
+          <button onclick="logout(); toggleHamburgerMenu();" class="w-full text-left px-4 py-2.5 text-sm font-medium hover:bg-gray-50 transition">로그아웃</button>
+          <button onclick="toggleForm(); toggleHamburgerMenu();" class="w-full text-left px-4 py-2.5 text-sm font-medium hover:bg-gray-50 transition">글쓰기</button>
+          <button onclick="openChatListModal(); toggleHamburgerMenu();" class="w-full text-left px-4 py-2.5 text-sm font-medium hover:bg-gray-50 transition flex items-center justify-between border-t border-gray-100">
+            <span>💬 채팅 목록</span>
+            <span id="unread-badge" class="hidden bg-red-500 text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+          </button>
+        `;
+      } else {
+        menu.innerHTML = `
+          <button onclick="openAuthModal('login'); toggleHamburgerMenu();" class="w-full text-left px-4 py-2.5 text-sm font-medium hover:bg-gray-50 transition">로그인</button>
+          <button onclick="toggleForm(); toggleHamburgerMenu();" class="w-full text-left px-4 py-2.5 text-sm font-medium hover:bg-gray-50 transition">글쓰기</button>
+        `;
+      }
+    }
+
+    function toggleHamburgerMenu() {
+      document.getElementById('hamburger-menu').classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('hamburger-menu');
+      const btn = document.getElementById('hamburger-btn');
+      if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    function startNotificationCheck() {
+      checkUnreadMessages();
+      if (notificationInterval) clearInterval(notificationInterval);
+      notificationInterval = setInterval(checkUnreadMessages, 3000);
+    }
+
+    async function checkUnreadMessages() {
+      if (!currentUser) return;
+
+      const { data } = await supabaseClient
+        .from('messages')
+        .select('id')
+        .eq('receiver_username', currentUser.username)
+        .eq('is_read', false);
+
+      const badge = document.getElementById('unread-badge');
+      const dot = document.getElementById('hamburger-dot');
+      const hasUnread = data && data.length > 0;
+
+      if (badge) {
+        if (hasUnread) {
+          badge.innerText = data.length > 99 ? '99+' : data.length;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+      if (dot) {
+        dot.classList.toggle('hidden', !hasUnread);
+      }
+    }
+
+    async function openChatListModal() {
+      if (!currentUser) return openAuthModal('login');
+      
+      document.getElementById('chat-list-modal').classList.remove('hidden');
+      const container = document.getElementById('chat-rooms-container');
+      container.innerHTML = `<div class="text-center py-6 text-gray-400 text-sm">대화방 목록을 불러오는 중...</div>`;
+
+      const { data: messages } = await supabaseClient
+        .from('messages')
+        .select('*')
+        .or(`sender_username.eq.${currentUser.username},receiver_username.eq.${currentUser.username}`)
+        .order('created_at', { ascending: false });
+
+      if (!messages || messages.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">진행 중인 채팅방이 없습니다.</div>`;
+        return;
+      }
+
+      const roomsMap = {};
+      messages.forEach(msg => {
+        const partnerUsername = msg.sender_username === currentUser.username ? msg.receiver_username : msg.sender_username;
+        if (!roomsMap[partnerUsername]) {
+          roomsMap[partnerUsername] = {
+            partnerUsername,
+            lastMessage: msg.content,
+            lastTime: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            unreadCount: (msg.receiver_username === currentUser.username && !msg.is_read) ? 1 : 0
+          };
+        } else if (msg.receiver_username === currentUser.username && !msg.is_read) {
+          roomsMap[partnerUsername].unreadCount += 1;
+        }
+      });
+
+      const partnerUsernames = Object.keys(roomsMap);
+      const { data: partnerProfiles } = await supabaseClient
+        .from('users')
+        .select('*')
+        .in('username', partnerUsernames);
+
+      const profileDict = {};
+      if (partnerProfiles) {
+        partnerProfiles.forEach(p => profileDict[p.username] = p);
+      }
+
+      container.innerHTML = '';
+      Object.values(roomsMap).forEach(room => {
+        const partner = profileDict[room.partnerUsername] || { realname: '알 수 없음', nickname: room.partnerUsername, age: null, gender: null };
+        const roomDiv = document.createElement('div');
+        roomDiv.className = 'p-3 bg-gray-50 border hover:bg-blue-50/50 rounded-xl cursor-pointer flex justify-between items-center transition';
+        
+        roomDiv.onclick = () => {
+          closeChatListModal();
+          openChatModal({
+            realname: partner.realname,
+            nickname: partner.nickname,
+            age: partner.age,
+            gender: partner.gender,
+            username: room.partnerUsername
+          });
+        };
+
+        roomDiv.innerHTML = `
+          <div class="space-y-0.5">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-gray-900 text-sm">${escapeHtml(partner.nickname || partner.username)}</span>
+              <span class="text-xs text-gray-500">(${escapeHtml(partner.realname || '익명')})</span>
+            </div>
+            <p class="text-xs text-gray-600 line-clamp-1">${escapeHtml(room.lastMessage)}</p>
+          </div>
+          <div class="text-right flex flex-col items-end gap-1">
+            <span class="text-[10px] text-gray-400">${room.lastTime}</span>
+            ${room.unreadCount > 0 ? `<span class="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">${room.unreadCount}</span>` : ''}
+          </div>
+        `;
+        container.appendChild(roomDiv);
+      });
+    }
+
+    function closeChatListModal() {
+      document.getElementById('chat-list-modal').classList.add('hidden');
+    }
+
+    function openAuthModal(mode) {
+      authMode = mode;
+      document.getElementById('modal-title').innerText = mode === 'login' ? '로그인' : '회원가입 및 프로필 작성';
+      document.getElementById('auth-submit-btn').innerText = mode === 'login' ? '로그인' : '회원가입 완료';
+      
+      const extraFields = document.getElementById('signup-extra-fields');
+      const footerLink = document.getElementById('login-footer-link');
+
+      if (mode === 'signup') {
+        extraFields.classList.remove('hidden');
+        if (footerLink) footerLink.classList.add('hidden');
+        document.getElementById('auth-realname').required = true;
+        document.getElementById('auth-nickname').required = true;
+        document.getElementById('auth-age').required = true;
+      } else {
+        extraFields.classList.add('hidden');
+        if (footerLink) footerLink.classList.remove('hidden');
+        document.getElementById('auth-realname').required = false;
+        document.getElementById('auth-nickname').required = false;
+        document.getElementById('auth-age').required = false;
+      }
+      
+      document.getElementById('auth-modal').classList.remove('hidden');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.add('hidden');
+      document.getElementById('auth-form').reset();
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const username = document.getElementById('auth-username').value.trim();
+      const password = document.getElementById('auth-password').value.trim();
+
+      if (!username || !password) return alert('아이디와 비밀번호를 모두 입력해주세요.');
+
+      if (authMode === 'signup') {
+        const realname = document.getElementById('auth-realname').value.trim();
+        const nickname = document.getElementById('auth-nickname').value.trim();
+        const age = parseInt(document.getElementById('auth-age').value);
+        const gender = document.getElementById('auth-gender').value;
+
+        if (!realname || !nickname || !age) {
+          return alert('모든 프로필 항목을 입력해주세요.');
+        }
+
+        const { data: existing } = await supabaseClient.from('users').select('*').eq('username', username);
+        if (existing && existing.length > 0) {
+          return alert('이미 존재하는 아이디입니다.');
+        }
+
+        const { error } = await supabaseClient.from('users').insert([{ 
+          username, 
+          password, 
+          realname, 
+          nickname, 
+          age, 
+          gender 
+        }]).select();
+        
+        if (error) {
+          alert('회원가입 오류: ' + error.message);
+        } else {
+          alert('회원가입 및 프로필 설정이 완료되었습니다! 로그인해주세요.');
+          openAuthModal('login');
+        }
+      } else {
+        const { data, error } = await supabaseClient.from('users').select('*').eq('username', username).eq('password', password);
+        
+        if (error || !data || data.length === 0) {
+          alert('아이디 또는 비밀번호가 일치하지 않습니다.');
+        } else {
+          currentUser = data[0];
+          localStorage.setItem('sch_roommate_user', JSON.stringify(currentUser));
+          renderAuthButtons();
+          startNotificationCheck();
+          closeAuthModal();
+          alert(`${currentUser.nickname || currentUser.username}님, 환영합니다!`);
+        }
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('sch_roommate_user');
+      if (notificationInterval) clearInterval(notificationInterval);
+      currentUser = null;
+      const dot = document.getElementById('hamburger-dot');
+      if (dot) dot.classList.add('hidden');
+      renderAuthButtons();
+      alert('로그아웃 되었습니다.');
+    }
+
+    function toggleForm() {
+      if (!currentUser) {
+        alert('글 작성을 위해 먼저 로그인해주세요.');
+        return openAuthModal('login');
+      }
+      const formSection = document.getElementById('post-form');
+      if (formSection.classList.contains('hidden')) {
+        updateDormOptions(); // 폼을 열 때 성별에 맞는 기숙사만 표시
+        if (currentSelectedDorm && currentSelectedDorm !== '전체' && isDormAllowedForGender(currentSelectedDorm, currentUser.gender)) {
+          document.getElementById('form-dormitory').value = currentSelectedDorm;
+        }
+      }
+      formSection.classList.toggle('hidden');
+      if (!formSection.classList.contains('hidden')) {
+        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function togglePenaltyInput() {
+      const hasPenalty = document.getElementById('has_penalty').value === 'true';
+      const container = document.getElementById('penalty-details-container');
+      if (hasPenalty) {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+        document.getElementById('penalty_details').value = '';
+      }
+    }
+
+    function selectDorm(dormName) {
+      currentSelectedDorm = dormName;
+      highlightDormLabel(dormName);
+
+      const formDormSelect = document.getElementById('form-dormitory');
+      if (formDormSelect && dormName !== '전체') {
+        const gender = currentUser ? currentUser.gender : null;
+        if (isDormAllowedForGender(dormName, gender)) formDormSelect.value = dormName;
+      }
+
+      document.getElementById('current-dorm-title').innerText =
+        dormName === '전체' ? '전체 게시글' : `${dormName} 게시글`;
+      fetchPosts();
+
+      document.getElementById('current-dorm-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function fetchPosts() {
+      const container = document.getElementById('posts-container');
+
+      if (!currentSelectedDorm) {
+        container.innerHTML = `<div class="col-span-2 text-center py-12 text-gray-400 bg-white rounded-xl border">🗺️ 위 지도에서 기숙사를 눌러 룸메이트 글을 확인해보세요!</div>`;
+        return;
+      }
+
+      let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+      if (currentSelectedDorm !== '전체') {
+        query = query.eq('dormitory', currentSelectedDorm);
+      }
+
+      const { data: posts, error } = await query;
+      container.innerHTML = '';
+
+      if (error || !posts || posts.length === 0) {
+        container.innerHTML = `<div class="col-span-2 text-center py-12 text-gray-400 bg-white rounded-xl border">등록된 게시글이 없습니다. 첫 글을 작성해보세요!</div>`;
+        return;
+      }
+
+      posts.forEach(post => {
+        const card = document.createElement('div');
+        card.className = 'bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-3';
+        
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded font-semibold mb-1">${escapeHtml(post.dormitory)}</span>
+              <h3 class="font-bold text-gray-900">${escapeHtml(post.nickname)}</h3>
+            </div>
+            <span class="text-xs text-gray-400">${new Date(post.created_at).toLocaleDateString()}</span>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-lg text-gray-600">
+            <div>🚬 흡연: <b>${post.is_smoker ? '흡연' : '비흡연'}</b></div>
+            <div>🛌 침대: <b>${post.bed_preference === 'up' ? '상층 (2층)' : post.bed_preference === 'down' ? '하층 (1층)' : '무관'}</b></div>
+            <div>🌙 취침: <b>${escapeHtml(post.sleep_time || '미지정')}</b></div>
+            <div>☀️ 기상: <b>${escapeHtml(post.wake_time || '미지정')}</b></div>
+            <div>😴 코골이: <b>${post.snoring ? '있음' : '없음'}</b></div>
+            <div>😬 이갈이: <b>${post.teeth_grinding ? '있음' : '없음'}</b></div>
+            <div>🗣️ 잠꼬대: <b>${post.sleep_talking ? '있음' : '없음'}</b></div>
+          </div>
+
+          <div class="text-xs bg-amber-50 text-amber-800 p-2.5 rounded-lg border border-amber-200">
+            <b>⚠️ 벌점 내역:</b> ${post.penalty_details ? escapeHtml(post.penalty_details) : '없음 (0점)'}
+          </div>
+
+          <p class="text-sm text-gray-700 font-medium">📌 추가 희망 사항</p>
+          <p class="text-sm text-gray-700 bg-gray-50 p-2.5 rounded-lg">${escapeHtml(post.description)}</p>
+          
+          <button onclick="requestStartChat('${escapeHtml(post.realname)}', '${escapeHtml(post.nickname)}', '${post.age}', '${post.gender}', '${escapeHtml(post.user_id)}')" class="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 rounded-lg font-semibold text-sm transition">
+            💬 1:1 익명 채팅하기
+          </button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function submitPost(e) {
+      e.preventDefault();
+
+      if (!currentUser) {
+        alert('로그인이 필요한 기능입니다.');
+        return openAuthModal('login');
+      }
+      
+      const hasPenalty = document.getElementById('has_penalty').value === 'true';
+      const penaltyDetails = document.getElementById('penalty_details').value.trim();
+
+      if (hasPenalty && !penaltyDetails) {
+        return alert('벌점 내역 및 사유를 입력해주세요.');
+      }
+
+      const selectedDorm = document.getElementById('form-dormitory').value;
+      if (!isDormAllowedForGender(selectedDorm, currentUser.gender)) {
+        updateDormOptions();
+        return alert('본인 성별에 맞는 기숙사만 선택할 수 있습니다.');
+      }
+
+      const sleepTime = `${document.getElementById('sleep_ampm').value} ${document.getElementById('sleep_hour').value}:${document.getElementById('sleep_minute').value}`;
+      const wakeTime = `${document.getElementById('wake_ampm').value} ${document.getElementById('wake_hour').value}:${document.getElementById('wake_minute').value}`;
+
+      const newPost = {
+        dormitory: document.getElementById('form-dormitory').value,
+        user_id: currentUser.username,
+        nickname: currentUser.nickname,
+        realname: currentUser.realname,
+        age: currentUser.age,
+        gender: currentUser.gender,
+        is_smoker: document.getElementById('is_smoker').value === 'true',
+        snoring: document.getElementById('snoring').value === 'true',
+        teeth_grinding: document.getElementById('teeth_grinding').value === 'true',
+        sleep_talking: document.getElementById('sleep_talking').value === 'true',
+        penalty_details: hasPenalty ? penaltyDetails : null,
+        bed_preference: document.getElementById('bed').value,
+        sleep_time: sleepTime,
+        wake_time: wakeTime,
+        description: document.getElementById('description').value
+      };
+
+      const { error } = await supabaseClient.from('posts').insert([newPost]);
+      if (error) {
+        alert('글 등록 실패: ' + error.message);
+      } else {
+        document.getElementById('roommate-form').reset();
+        document.getElementById('penalty-details-container').classList.add('hidden');
+        toggleForm();
+        fetchPosts();
+      }
+    }
+
+    function requestStartChat(realname, nickname, age, gender, username) {
+      if (!currentUser) {
+        alert('1:1 채팅에 참여하려면 먼저 로그인해주세요.');
+        return openAuthModal('login');
+      }
+
+      selectedTargetUser = { realname, nickname, age, gender, username };
+      document.getElementById('chat-notice-modal').classList.remove('hidden');
+    }
+
+    function closeChatNoticeModal() {
+      document.getElementById('chat-notice-modal').classList.add('hidden');
+    }
+
+    function confirmChatNotice() {
+      document.getElementById('chat-notice-modal').classList.add('hidden');
+      if (selectedTargetUser) {
+        openChatModal(selectedTargetUser);
+      }
+    }
+
+    function openChatModal(target) {
+      selectedTargetUser = target;
+      document.getElementById('chat-target-name').innerText = target.realname || '미공개';
+      document.getElementById('chat-target-nickname').innerText = target.nickname || '익명';
+      document.getElementById('chat-target-age').innerText = target.age ? `${target.age}세` : '미공개';
+      document.getElementById('chat-target-gender').innerText = target.gender === 'male' ? '남성' : target.gender === 'female' ? '여성' : '미공개';
+
+      document.getElementById('chat-modal').classList.remove('hidden');
+
+      fetchMessages();
+      if (chatInterval) clearInterval(chatInterval);
+      chatInterval = setInterval(fetchMessages, 2000);
+    }
+
+    function closeChatModal() {
+      document.getElementById('chat-modal').classList.add('hidden');
+      if (chatInterval) clearInterval(chatInterval);
+      selectedTargetUser = null;
+      checkUnreadMessages();
+    }
+
+    async function sendMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-input');
+      const content = input.value.trim();
+
+      if (!content || !selectedTargetUser || !currentUser) return;
+
+      const { error } = await supabaseClient.from('messages').insert([{
+        sender_username: currentUser.username,
+        receiver_username: selectedTargetUser.username,
+        content: content,
+        is_read: false
+      }]);
+
+      if (error) {
+        alert('메시지 전송 실패: ' + error.message);
+      } else {
+        input.value = '';
+        fetchMessages();
+      }
+    }
+
+    async function fetchMessages() {
+      if (!currentUser || !selectedTargetUser) return;
+
+      await supabaseClient
+        .from('messages')
+        .update({ is_read: true })
+        .eq('sender_username', selectedTargetUser.username)
+        .eq('receiver_username', currentUser.username)
+        .eq('is_read', false);
+
+      const { data: messages, error } = await supabaseClient.from('messages')
+        .select('*')
+        .or(`and(sender_username.eq.${currentUser.username},receiver_username.eq.${selectedTargetUser.username}),and(sender_username.eq.${selectedTargetUser.username},receiver_username.eq.${currentUser.username})`)
+        .order('created_at', { ascending: true });
+
+      const container = document.getElementById('chat-messages-container');
+      container.innerHTML = '';
+
+      if (error || !messages || messages.length === 0) {
+        container.innerHTML = `<div class="text-center py-4 text-xs text-gray-400">대화 내역이 없습니다. 첫 메시지를 보내보세요!</div>`;
+        return;
+      }
+
+      messages.forEach(msg => {
+        const isMine = msg.sender_username === currentUser.username;
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `flex ${isMine ? 'justify-end' : 'justify-start'}`;
+        
+        msgDiv.innerHTML = `
+          <div class="${isMine ? 'bg-blue-600 text-white' : 'bg-white border text-gray-800'} text-sm px-3 py-2 rounded-xl max-w-[75%] shadow-xs">
+            ${escapeHtml(msg.content)}
+          </div>
+        `;
+        container.appendChild(msgDiv);
+      });
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+      return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+    }
+  </script>
+</body>
+</html>
